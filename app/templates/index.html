@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% if user %}
-<h1>Hello, {{ user.username }}!</h1>
+{% if current_user.is_anonymous %}
+<h1>Hello, Stranger!</h1>
+{% else %}
+<h1>Hello, {{ current_user.username }}!</h1>
 <div>
     <ul>
         {% for post in posts %}
@@ -10,7 +12,6 @@
         {% endfor %}
     </ul>
 </div>
-{% else %}
-Hello, Stranger!
+
 {% endif %}
 {% endblock %}
