@@ -25,6 +25,12 @@
     <p>
         {{ form.submit() }}
     </p>
+    <div>
+        <p>
+            Don't have an account yet? <br>
+            <a href=" {{ url_for('register') }}">Sign up</a>
+        </p>
+    </div>
 </form>
 
 {% endblock %}
