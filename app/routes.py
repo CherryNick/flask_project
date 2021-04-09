@@ -2,7 +2,7 @@ from flask import render_template, flash, redirect, url_for, request
 from app.forms import LoginForm, RegistrationForm
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User
+from app.models import User, Post, Profile
 from werkzeug.urls import url_parse
 
 
@@ -80,3 +80,12 @@ def register():
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+
+@app.route('/user/<username>')
+@login_required
+def user(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    profile = Profile.query.filter_by(user_id=user.id).all()
+    posts = Post.query.filter_by(user_id=user.id).all()
+    return render_template('profile.html', user=user, profile=profile, posts=posts)
