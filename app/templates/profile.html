@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Profile {{ user.username }}</h1>
+<br>
+
+{% if profile %}
+<ul>
+    <li> {{ profile.date_of_birth }}</li>
+    <li> {{ profile.gender }}</li>
+    <li> {{ profile.info }}</li>
+</ul>
+{% endif %}
+
+{% if posts %}
+{% for post in posts %}
+<p>{{ post.author.username }}</p>
+<p>{{ post.body }}</p>
+<p>{{ post.timestamp }}</p>
+{% endfor %}
+{% else %}
+<p>There is no posts yet :(</p>
+{% endif %}
+
+{% endblock %}
