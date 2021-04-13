@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import SubmitField, StringField, PasswordField, BooleanField, \
     RadioField, FileField, TextAreaField
 from wtforms.fields.html5 import DateField
-from wtforms.validators import DataRequired, email, EqualTo, length, ValidationError, regexp
+from wtforms.validators import DataRequired, email, EqualTo, length, ValidationError, regexp, Length
 from app.models import User
 
 
@@ -14,7 +14,7 @@ class LoginForm(FlaskForm):
 
 
 class RegistrationForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired(), length(min=4, max=20)])
+    username = StringField('Username', validators=[DataRequired(), Length(min=4, max=20)])
     email = StringField('email', validators=[email()])
     password = PasswordField('Password', validators=[DataRequired(),
                                                      EqualTo('confirm', message='Passwords must match')])
@@ -40,4 +40,8 @@ class EditProfileForm(FlaskForm):
     submit = SubmitField('Save')
 
 
+class CreatePost(FlaskForm):
+    text = TextAreaField('Text', validators=[Length(min=1, max=200)])
+    media = FileField('Image File')
+    submit = SubmitField('Submit')
 

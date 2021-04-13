@@ -1,5 +1,5 @@
 from app import db, login
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from os import path
@@ -36,6 +36,17 @@ class Post(db.Model):
 
     def __repr__(self):
         return f'<Post: {self.body}>'
+
+    def get_date(self):
+        time_diff = datetime.now() - self.timestamp
+        if time_diff < timedelta(minutes=1):
+            return 'just now'
+        elif time_diff < timedelta(minutes=60):
+            return f'{time_diff.seconds // 60} minutes ago'
+        elif time_diff < timedelta(days=1):
+            return f'today {self.timestamp.seconds // 60}:{self.timestamp.seconds // 60}'
+
+
 
 
 class Profile(db.Model):
