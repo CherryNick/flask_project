@@ -1,6 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import SubmitField, StringField, PasswordField, BooleanField
-from wtforms.validators import DataRequired, email, EqualTo, length, ValidationError
+from wtforms import SubmitField, StringField, PasswordField, BooleanField, \
+    RadioField, FileField, TextAreaField
+from wtforms.fields.html5 import DateField
+from wtforms.validators import DataRequired, email, EqualTo, length, ValidationError, regexp
 from app.models import User
 
 
@@ -20,11 +22,22 @@ class RegistrationForm(FlaskForm):
     submit = SubmitField('Sign up')
 
     def validate_username(self, username):
-        user = User.query.filter_by(username=username.data).first()
+        user = User.query.filter_by(username=username.data.title()).first()
         if user:
             raise ValidationError('Username already exists!')
 
     def validate_email(self, email):
-        email = User.query.filter_by(email=email.data).first()
+        email = User.query.filter_by(email=email.data.lower()).first()
         if email:
             raise ValidationError('email already exists!')
+
+
+class EditProfileForm(FlaskForm):
+    gender = RadioField('gender', choices=['m', 'f'])
+    photo = FileField('Image File')  #, #validators=[regexp(r'^[^/\\]\.jpg$')]
+    info = TextAreaField('About me')
+    date_of_birth = DateField('Date of birth')
+    submit = SubmitField('Save')
+
+
+
