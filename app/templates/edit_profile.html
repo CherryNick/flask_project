@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Profile {{ user.username }}</h1>
+<br>
+
+<h3>Edit info:</h3>
+<form action="" method="POST" novalidate>
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.gender.label }} <br>
+        {{ form.gender(size=32) }}
+    </p>
+    <p>
+        {{ form.photo.label }} <br>
+        {{ form.photo(size=32) }}
+        {% for error in form.photo.errors %}
+    <p class="validation_error">{{ error }}</p>
+    {% endfor %}
+    </p>
+    <p>
+        {{ form.info.label }} <br>
+        {{ form.info(size=32) }}
+    </p>
+    <p>
+        {{ form.date_of_birth.label }} <br>
+        {{ form.date_of_birth(size=32) }}
+    </p>
+    <p>
+        {{ form.submit() }}
+    </p>
+
+
+
+</form>
+
+
+
+{% endblock %}
