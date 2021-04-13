@@ -1,5 +1,5 @@
 from flask import render_template, flash, redirect, url_for, request
-from app.forms import LoginForm, RegistrationForm, EditProfileForm
+from app.forms import LoginForm, RegistrationForm, EditProfileForm, CreatePost
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User, Post, Profile
@@ -35,7 +35,7 @@ def login():
     # submit validation
 
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
+        user = User.query.filter_by(username=form.username.data.title()).first()
         # flash message if success validation
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username or password')
@@ -82,19 +82,30 @@ def logout():
     return redirect(url_for('index'))
 
 
-@app.route('/user/<username>')
+@app.route('/user/<username>', methods=['GET', 'POST'])
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
     profile = user.profile.first()
+    post_form = CreatePost()
+
+    if post_form.validate_on_submit():
+        post = Post(body=post_form.text.data,
+                    user_id=current_user.id)
+
+        db.session.add(post)
+        db.session.commit()
+        return redirect(url_for('user', username=username))
+
     posts = user.posts.all()
-    return render_template('profile.html', user=user, profile=profile, posts=posts)
+
+    return render_template('profile.html', user=user, profile=profile, posts=posts, post_form=post_form)
 
 
 @app.route('/user/<username>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_profile(username):
-    
+
     form = EditProfileForm()
 
     if current_user.profile.first():
@@ -122,6 +133,5 @@ def edit_profile(username):
 
             flash('Saved')
             return redirect(url_for('user', username=current_user.username))
-
 
     return render_template('edit_profile.html', user=current_user, profile=profile, form=form)
