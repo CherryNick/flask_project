@@ -2,26 +2,43 @@ from flask import render_template, flash, redirect, url_for, request
 from app.forms import LoginForm, RegistrationForm, EditProfileForm, CreatePost
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User, Post, Profile
+from app.models import User, Post, Profile, Media
+from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
+from os import path
+from datetime import date
+from shortuuid import uuid
 
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 @login_required
 def index():
     if current_user:
         user = current_user
-        posts = [
-            {
-                'author': {'username': 'John'},
-                'body': 'beautiful day in Portland!'
-            },
-            {
-                'author': {'username': 'Peter'},
-                'body': 'Hi there!'
-            }
-        ]
-    return render_template('index.html', title='Homepage', posts=posts)
+        posts = Post.query.filter_by(is_deleted=False).all()  # need to fix
+
+    post_form = CreatePost()
+
+    if post_form.validate_on_submit():
+
+        file = request.files[post_form.media.name]
+        filename = f'{uuid()}.jpg'
+        media = Media()
+        media.make_path(filename)
+        file.save(path.join(path.dirname(__file__), media.path[1:]))
+
+        db.session.add(media)
+        db.session.commit()
+
+        post = Post(body=post_form.text.data,
+                    photo_id=media.id,
+                    user_id=current_user.id)
+
+        db.session.add(post)
+        db.session.commit()
+        return redirect(url_for('index'))
+
+    return render_template('index.html', title='Homepage', posts=posts, post_form=post_form)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -86,11 +103,21 @@ def logout():
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
-    profile = user.profile.first()
+    profile = user.profile
     post_form = CreatePost()
 
     if post_form.validate_on_submit():
+        file = request.files[post_form.media.name]
+        filename = f'{uuid()}.jpg'
+        media = Media()
+        media.make_path(filename)
+        file.save(path.join(path.dirname(__file__), media.path[1:]))
+
+        db.session.add(media)
+        db.session.commit()
+
         post = Post(body=post_form.text.data,
+                    photo_id=media.id,
                     user_id=current_user.id)
 
         db.session.add(post)
@@ -108,12 +135,21 @@ def edit_profile(username):
 
     form = EditProfileForm()
 
-    if current_user.profile.first():
-        profile = current_user.profile.first()
+    if current_user.profile:
+        profile = current_user.profile
         if form.validate_on_submit():
+            file = request.files[form.photo.name]
+            filename = f'{uuid()}.jpg'
+            media = Media()
+            media.make_path(filename)
+            file.save(path.join(path.dirname(__file__), media.path[1:]))
+
+            db.session.add(media)
+            db.session.commit()
+
             profile.update_info(gender=form.gender.data,
                                 info=form.info.data,
-                                photo='1',
+                                photo=media.id,
                                 date_of_birth=form.date_of_birth.data)
 
             db.session.add(profile)
@@ -122,16 +158,35 @@ def edit_profile(username):
             flash('Saved')
             return redirect(url_for('user', username=current_user.username))
     else:
+        filename = f'{uuid()}.jpg'
+        media = Media()
+        media.make_path(filename)
         profile = Profile(user_id=current_user.id,
                           gender=form.gender.data,
+                          photo=media.id,
                           info=form.info.data,
                           date_of_birth=form.date_of_birth.data)
         if form.validate_on_submit():
+            file = request.files[form.photo.name]
+
+            file.save(path.join(path.dirname(__file__), media.path[1:]))
 
             db.session.add(profile)
+            db.session.add(media)
             db.session.commit()
 
             flash('Saved')
             return redirect(url_for('user', username=current_user.username))
 
     return render_template('edit_profile.html', user=current_user, profile=profile, form=form)
+
+
+@app.errorhandler(404)
+def error404(error):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def error500(error):
+    db.session.rollback()
+    return render_template('500.html'), 500

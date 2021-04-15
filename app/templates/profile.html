@@ -2,6 +2,7 @@
 {% block content %}
 
 <h1>Profile {{ user.username }}</h1>
+<img src="{{ user.profile.media.path }}" alt="">
 <br>
 
 <h3>Info:</h3>
@@ -20,14 +21,12 @@
 {% endif %}
 
 <h4>New post:</h4>
-{% include "_post.html" %}
+{% include "_post_form.html" %}
 
 <h3>Posts:</h3>
 {% if posts %}
 {% for post in posts %}
-<p>{{ post.author.username }}</p>
-<p>{{ post.body }}</p>
-<p>{{ post.get_date() }}</p>
+{% include "_post.html" %}
 {% endfor %}
 {% else %}
 <p>There is no posts yet :(</p>
