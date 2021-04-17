@@ -34,7 +34,7 @@ class RegistrationForm(FlaskForm):
 
 class EditProfileForm(FlaskForm):
     gender = RadioField('gender', choices=['m', 'f'])
-    photo = FileField('Image File')  #, #validators=[regexp(r'^[^/\\]\.jpg$')]
+    media = FileField('Image File')  #, #validators=[regexp(r'^[^/\\]\.jpg$')]
     info = TextAreaField('About me')
     date_of_birth = DateField('Date of birth')
     submit = SubmitField('Save')

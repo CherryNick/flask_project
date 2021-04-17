@@ -2,7 +2,8 @@ from app import db, login
 from datetime import datetime, date, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from os import path
+from os import path, mkdir
+import pathlib
 
 
 class User(UserMixin, db.Model):
@@ -107,7 +108,10 @@ class Media(db.Model):
         return f'<Media id: {self.id}>'
 
     def make_path(self, name):
-        self.path = path.join('/', f'static', f'media', f'{date.today()}', f'{name}')
+        today_path = path.join(f'{pathlib.Path(__file__).parent.absolute()}', 'static', 'media', f'{date.today()}')
+        if not path.isdir(today_path):
+            mkdir(today_path)
+        self.path = path.join('/', 'static', 'media', f'{date.today()}', f'{name}')
 
     def get_path(self):
         return self.path

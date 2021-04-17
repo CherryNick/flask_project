@@ -12,9 +12,9 @@
         {{ form.gender(size=32) }}
     </p>
     <p>
-        {{ form.photo.label }} <br>
-        {{ form.photo(size=32) }}
-        {% for error in form.photo.errors %}
+        {{ form.media.label }} <br>
+        {{ form.media(size=32) }}
+        {% for error in form.media.errors %}
     <p class="validation_error">{{ error }}</p>
     {% endfor %}
     </p>
