@@ -5,6 +5,14 @@
 <img src="{{ user.profile.media.path }}" alt="">
 <br>
 
+{% if current_user.username == user.username %}
+<a href="{{ url_for('edit_profile', username=current_user.username) }}">Edit</a>
+{% elif not current_user.is_following(user) %}
+<a href="{{ url_for('follow', username=user.username) }}">Follow</a>
+{% elif current_user.is_following(user) %}
+<a href="{{ url_for('unfollow', username=user.username) }}">Unfollow</a>
+{% endif %}
+
 <h3>Info:</h3>
 {% if profile %}
 <ul>
@@ -16,9 +24,7 @@
 <p>There is nothing here yet :(</p>
 {% endif %}
 
-{% if current_user.username == user.username %}
-<a href="{{ url_for('edit_profile', username=current_user.username) }}">Edit</a>
-{% endif %}
+
 
 <h4>New post:</h4>
 {% include "_post_form.html" %}

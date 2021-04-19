@@ -2,10 +2,8 @@ from flask import render_template, flash, redirect, url_for, request
 from app.forms import LoginForm, RegistrationForm, EditProfileForm, CreatePost
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User, Post, Profile, Media
+from app.models import User, Post, Profile
 from werkzeug.urls import url_parse
-from os import path
-from shortuuid import uuid
 from app.utils import upload_media
 
 
@@ -14,12 +12,11 @@ from app.utils import upload_media
 def index():
     if current_user:
         user = current_user
-        posts = Post.query.filter_by(is_deleted=False).all()  # need to fix
+        posts = user.followed_posts()
 
     post_form = CreatePost()
 
     if post_form.validate_on_submit():
-
         media_id = upload_media(post_form)
 
         post = Post(body=post_form.text.data,
@@ -42,18 +39,15 @@ def login():
 
     form = LoginForm()
 
-    # submit validation
-
     if form.validate_on_submit():
+
         user = User.query.filter_by(username=form.username.data.title()).first()
-        # flash message if success validation
+
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username or password')
             return redirect(url_for('login'))
 
         login_user(user, remember=form.remember_me.data)
-
-        # flash(f'Login requested for user {form.username.data}, remember_me={form.remember_me.data}')
 
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
@@ -70,8 +64,6 @@ def register():
         return redirect(url_for('index'))
 
     form = RegistrationForm()
-
-    # submit validation
 
     if form.validate_on_submit():
         user = User(username=form.username.data.strip().title(), email=form.email.data.strip().lower())
@@ -100,7 +92,6 @@ def user(username):
     post_form = CreatePost()
 
     if post_form.validate_on_submit():
-
         media_id = upload_media(post_form)
 
         post = Post(body=post_form.text.data,
@@ -120,7 +111,6 @@ def user(username):
 @app.route('/user/<username>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_profile(username):
-
     form = EditProfileForm()
 
     if form.validate_on_submit():
@@ -147,6 +137,30 @@ def edit_profile(username):
         return redirect(url_for('user', username=current_user.username))
 
     return render_template('edit_profile.html', user=current_user, form=form)
+
+
+@app.route('/follow/<username>')
+@login_required
+def follow(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if user == current_user:
+        flash('You cannot follow yourself!')
+        return redirect(url_for('index'))
+    current_user.follow(user)
+    db.session.commit()
+    return redirect(url_for('user', username=username))
+
+
+@app.route('/unfollow/<username>')
+@login_required
+def unfollow(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if user == current_user:
+        flash('You cannot unfollow yourself!')
+        return redirect(url_for('index'))
+    current_user.unfollow(user)
+    db.session.commit()
+    return redirect(url_for('user', username=username))
 
 
 @app.errorhandler(404)
