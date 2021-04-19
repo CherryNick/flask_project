@@ -2,3 +2,15 @@
     width: 80px;
     height: 80px;
 }
+
+.profile_avatar {
+    max-width: 300px;
+}
+
+.user_info {
+    display: flex;
+}
+
+.post_media {
+    max-width: 500px;
+}

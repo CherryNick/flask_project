@@ -1,6 +1,9 @@
 <table>
     <tr valign="top">
-        <td><img src="{{ post.author.profile.media.path }}" alt="photo" class="small_avatar"></td>
+        <td>{% if post.author.profile.media %}
+            <img src="{{ post.author.profile.media.path }}" alt="photo" class="small_avatar">
+            {% endif %}
+        </td>
         <td>
             <a href="{{ url_for('user', username=post.author.username) }}">
                 {{ post.author.username }}
@@ -10,7 +13,7 @@
             {{ post.get_date() }}
             <br>
             {% if post.photo_id %}
-            <img src="{{ post.media.path }}" alt="photo">
+            <img class="post_media" src="{{ post.media.path }}" alt="photo">
             {% endif %}
             <br>
             {% if post.author == current_user %}

@@ -8,11 +8,40 @@ from app.utils import upload_media
 
 
 @app.route('/', methods=['GET', 'POST'])
-@login_required
 def index():
-    if current_user:
+    if not current_user.is_anonymous:
         user = current_user
-        posts = user.followed_posts()
+
+        page=request.args.get('page', 1, type=int)
+        posts = user.followed_posts().paginate(page, app.config['POST_PER_PAGE'], False)
+        next_url = url_for('index', page=posts.next_num) if posts.has_next else None
+        prev_url = url_for('index', page=posts.prev_num) if posts.has_prev else None
+
+        post_form = CreatePost()
+
+        if post_form.validate_on_submit():
+            media_id = upload_media(post_form)
+
+            post = Post(body=post_form.text.data,
+                        photo_id=media_id,
+                        user_id=current_user.id)
+
+            db.session.add(post)
+            db.session.commit()
+
+            return redirect(url_for('index'))
+        return render_template('index.html', title='Homepage', posts=posts.items, post_form=post_form,
+                               next_url=next_url, prev_url=prev_url)
+    return render_template('index.html', title='Homepage')
+
+
+@app.route('/explore', methods=['GET', 'POST'])
+@login_required
+def explore():
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.order_by(Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
+    next_url = url_for('explore', page=posts.next_num) if posts.has_next else None
+    prev_url = url_for('explore', page=posts.prev_num) if posts.has_prev else None
 
     post_form = CreatePost()
 
@@ -26,9 +55,10 @@ def index():
         db.session.add(post)
         db.session.commit()
 
-        return redirect(url_for('index'))
+        return redirect(url_for('explore'))
 
-    return render_template('index.html', title='Homepage', posts=posts, post_form=post_form)
+    return render_template('explore.html', title='Explore', posts=posts.items, post_form=post_form,
+                           next_url=next_url, prev_url=prev_url)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -103,9 +133,13 @@ def user(username):
 
         return redirect(url_for('user', username=username))
 
-    posts = user.posts.all()
+    page = request.args.get('page', 1, type=int)
+    posts = user.posts.order_by(Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
+    next_url = url_for('user', username=user.username, page=posts.next_num) if posts.has_next else None
+    prev_url = url_for('user', username=user.username, page=posts.prev_num) if posts.has_prev else None
 
-    return render_template('profile.html', user=user, profile=profile, posts=posts, post_form=post_form)
+    return render_template('profile.html', user=user, profile=profile, posts=posts.items, post_form=post_form,
+                           next_url=next_url, prev_url=prev_url)
 
 
 @app.route('/user/<username>/edit', methods=['GET', 'POST'])
