@@ -1,15 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% if current_user.is_anonymous %}
-<h1>Hello, Stranger!</h1>
-<p>First time here?</p>
-<a href="{{ url_for('register') }}">Sign up</a>
-<p>Already have account?</p>
-<a href="{{ url_for('login') }}">Sign in</a>
-{% else %}
-<h1>Hello, {{ current_user.username }}!</h1>
-<h4>What's new?</h4>
+<h1>Explore</h1>
+<h4>Write something:</h4>
 {% include "_post_form.html" %}
 <div>
     {% if posts %}
@@ -27,5 +20,4 @@
     {% endif %}
 </div>
 
-{% endif %}
 {% endblock %}

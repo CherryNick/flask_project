@@ -1,34 +1,53 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Profile {{ user.username }}</h1>
-<br>
+<div class="user_info">
+    <div>
+        {% if user.profile.media %}
+        <img src="{{ post.author.profile.media.path }}" alt="photo" class="small_avatar">
+        {% endif %}
+    </div>
+    <div>
+        <h1>Profile {{ user.username }}</h1>
+        <br>
 
-<h3>Info:</h3>
-{% if profile %}
-<ul>
-    <li>Date of birth: {{ profile.date_of_birth }}</li>
-    <li>Gender: {% if profile.gender == 'm' %}male{% elif profile.gender == 'f' %}female{% endif %}</li>
-    <li>About me: {{ profile.info }}</li>
-</ul>
-{% else %}
-<p>There is nothing here yet :(</p>
-{% endif %}
+        {% if current_user.username == user.username %}
+        <a href="{{ url_for('edit_profile', username=current_user.username) }}">Edit</a>
+        {% elif not current_user.is_following(user) %}
+        <a href="{{ url_for('follow', username=user.username) }}">Follow</a>
+        {% elif current_user.is_following(user) %}
+        <a href="{{ url_for('unfollow', username=user.username) }}">Unfollow</a>
+        {% endif %}
 
-{% if current_user.username == user.username %}
-<a href="{{ url_for('edit_profile', username=current_user.username) }}">Edit</a>
-{% endif %}
+        <h3>Info:</h3>
+        {% if profile %}
+        <ul>
+            <li>Date of birth: {{ profile.date_of_birth }}</li>
+            <li>Gender: {% if profile.gender == 'm' %}male{% elif profile.gender == 'f' %}female{% endif %}</li>
+            <li>About me: {{ profile.info }}</li>
+        </ul>
+        {% else %}
+        <p>There is nothing here yet :(</p>
+        {% endif %}
+    </div>
+</div>
+
+
 
 <h4>New post:</h4>
-{% include "_post.html" %}
+{% include "_post_form.html" %}
 
 <h3>Posts:</h3>
 {% if posts %}
 {% for post in posts %}
-<p>{{ post.author.username }}</p>
-<p>{{ post.body }}</p>
-<p>{{ post.get_date() }}</p>
+{% include "_post.html" %}
 {% endfor %}
+{% if prev_url %}
+<a href="{{ prev_url }}">Previous page</a>
+{% endif %}
+{% if next_url %}
+<a href="{{ next_url }}">Next page</a>
+{% endif %}
 {% else %}
 <p>There is no posts yet :(</p>
 {% endif %}

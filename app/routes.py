@@ -4,24 +4,61 @@ from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User, Post, Profile
 from werkzeug.urls import url_parse
+from app.utils import upload_media
 
 
-@app.route('/')
-@login_required
+@app.route('/', methods=['GET', 'POST'])
 def index():
-    if current_user:
+    if not current_user.is_anonymous:
         user = current_user
-        posts = [
-            {
-                'author': {'username': 'John'},
-                'body': 'beautiful day in Portland!'
-            },
-            {
-                'author': {'username': 'Peter'},
-                'body': 'Hi there!'
-            }
-        ]
-    return render_template('index.html', title='Homepage', posts=posts)
+
+        page=request.args.get('page', 1, type=int)
+        posts = user.followed_posts().paginate(page, app.config['POST_PER_PAGE'], False)
+        next_url = url_for('index', page=posts.next_num) if posts.has_next else None
+        prev_url = url_for('index', page=posts.prev_num) if posts.has_prev else None
+
+        post_form = CreatePost()
+
+        if post_form.validate_on_submit():
+            media_id = upload_media(post_form)
+
+            post = Post(body=post_form.text.data,
+                        photo_id=media_id,
+                        user_id=current_user.id)
+
+            db.session.add(post)
+            db.session.commit()
+
+            return redirect(url_for('index'))
+        return render_template('index.html', title='Homepage', posts=posts.items, post_form=post_form,
+                               next_url=next_url, prev_url=prev_url)
+    return render_template('index.html', title='Homepage')
+
+
+@app.route('/explore', methods=['GET', 'POST'])
+@login_required
+def explore():
+    page = request.args.get('page', 1, type=int)
+    posts = Post.query.order_by(Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
+    next_url = url_for('explore', page=posts.next_num) if posts.has_next else None
+    prev_url = url_for('explore', page=posts.prev_num) if posts.has_prev else None
+
+    post_form = CreatePost()
+
+    if post_form.validate_on_submit():
+        media_id = upload_media(post_form)
+
+        post = Post(body=post_form.text.data,
+                    photo_id=media_id,
+                    user_id=current_user.id)
+
+        db.session.add(post)
+        db.session.commit()
+
+        return redirect(url_for('explore'))
+
+    return render_template('explore.html', title='Explore', posts=posts.items, post_form=post_form,
+                           next_url=next_url, prev_url=prev_url)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -32,18 +69,15 @@ def login():
 
     form = LoginForm()
 
-    # submit validation
-
     if form.validate_on_submit():
+
         user = User.query.filter_by(username=form.username.data.title()).first()
-        # flash message if success validation
+
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username or password')
             return redirect(url_for('login'))
 
         login_user(user, remember=form.remember_me.data)
-
-        # flash(f'Login requested for user {form.username.data}, remember_me={form.remember_me.data}')
 
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
@@ -60,8 +94,6 @@ def register():
         return redirect(url_for('index'))
 
     form = RegistrationForm()
-
-    # submit validation
 
     if form.validate_on_submit():
         user = User(username=form.username.data.strip().title(), email=form.email.data.strip().lower())
@@ -86,52 +118,91 @@ def logout():
 @login_required
 def user(username):
     user = User.query.filter_by(username=username).first_or_404()
-    profile = user.profile.first()
+    profile = user.profile
     post_form = CreatePost()
 
     if post_form.validate_on_submit():
+        media_id = upload_media(post_form)
+
         post = Post(body=post_form.text.data,
+                    photo_id=media_id,
                     user_id=current_user.id)
 
         db.session.add(post)
         db.session.commit()
+
         return redirect(url_for('user', username=username))
 
-    posts = user.posts.all()
+    page = request.args.get('page', 1, type=int)
+    posts = user.posts.order_by(Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
+    next_url = url_for('user', username=user.username, page=posts.next_num) if posts.has_next else None
+    prev_url = url_for('user', username=user.username, page=posts.prev_num) if posts.has_prev else None
 
-    return render_template('profile.html', user=user, profile=profile, posts=posts, post_form=post_form)
+    return render_template('profile.html', user=user, profile=profile, posts=posts.items, post_form=post_form,
+                           next_url=next_url, prev_url=prev_url)
 
 
 @app.route('/user/<username>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_profile(username):
-
     form = EditProfileForm()
 
-    if current_user.profile.first():
-        profile = current_user.profile.first()
-        if form.validate_on_submit():
+    if form.validate_on_submit():
+
+        media_id = upload_media(form)
+
+        if current_user.profile:
+            profile = current_user.profile
             profile.update_info(gender=form.gender.data,
                                 info=form.info.data,
-                                photo='1',
+                                photo=media_id,
                                 date_of_birth=form.date_of_birth.data)
+        else:
+            profile = Profile(user_id=current_user.id,
+                              gender=form.gender.data,
+                              photo_id=media_id,
+                              info=form.info.data,
+                              date_of_birth=form.date_of_birth.data)
 
-            db.session.add(profile)
-            db.session.commit()
+        db.session.add(profile)
+        db.session.commit()
 
-            flash('Saved')
-            return redirect(url_for('user', username=current_user.username))
-    else:
-        profile = Profile(user_id=current_user.id,
-                          gender=form.gender.data,
-                          info=form.info.data,
-                          date_of_birth=form.date_of_birth.data)
-        if form.validate_on_submit():
+        flash('Saved')
+        return redirect(url_for('user', username=current_user.username))
 
-            db.session.add(profile)
-            db.session.commit()
+    return render_template('edit_profile.html', user=current_user, form=form)
 
-            flash('Saved')
-            return redirect(url_for('user', username=current_user.username))
 
-    return render_template('edit_profile.html', user=current_user, profile=profile, form=form)
+@app.route('/follow/<username>')
+@login_required
+def follow(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if user == current_user:
+        flash('You cannot follow yourself!')
+        return redirect(url_for('index'))
+    current_user.follow(user)
+    db.session.commit()
+    return redirect(url_for('user', username=username))
+
+
+@app.route('/unfollow/<username>')
+@login_required
+def unfollow(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if user == current_user:
+        flash('You cannot unfollow yourself!')
+        return redirect(url_for('index'))
+    current_user.unfollow(user)
+    db.session.commit()
+    return redirect(url_for('user', username=username))
+
+
+@app.errorhandler(404)
+def error404(error):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def error500(error):
+    db.session.rollback()
+    return render_template('500.html'), 500

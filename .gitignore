@@ -1,3 +1,4 @@
 .idea
+/app/static/media
 __pycache__
 config.py

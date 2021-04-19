@@ -1,0 +1,15 @@
+{% block content %}
+<h4>Create post</h4>
+<form action="" method="POST" enctype="multipart/form-data" novalidate>
+    {{ post_form.hidden_tag() }}
+    <p>
+        {{ post_form.text(size=56) }} <br>
+    </p>
+    <p>
+        {{ post_form.media(size=32) }}
+    </p>
+    <p>
+        {{ post_form.submit() }}
+    </p>
+</form>
+{% endblock %}

@@ -1,15 +1,24 @@
-{% block content %}
-<h4>Create post</h4>
-<form action="" method="POST" novalidate>
-    {{ post_form.hidden_tag() }}
-    <p>
-        {{ post_form.text(size=56) }} <br>
-    </p>
-    <p>
-        {{ post_form.media(size=32) }}
-    </p>
-    <p>
-        {{ post_form.submit() }}
-    </p>
-</form>
-{% endblock %}
+<table>
+    <tr valign="top">
+        <td>{% if post.author.profile.media %}
+            <img src="{{ post.author.profile.media.path }}" alt="photo" class="small_avatar">
+            {% endif %}
+        </td>
+        <td>
+            <a href="{{ url_for('user', username=post.author.username) }}">
+                {{ post.author.username }}
+            </a>
+            says:<br>{{ post.body }}
+            <br>
+            {{ post.get_date() }}
+            <br>
+            {% if post.photo_id %}
+            <img class="post_media" src="{{ post.media.path }}" alt="photo">
+            {% endif %}
+            <br>
+            {% if post.author == current_user %}
+            <a href="{{ post.delete() }}">delete</a>
+            {% endif %}
+        </td>
+    </tr>
+</table>
