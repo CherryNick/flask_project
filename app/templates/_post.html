@@ -17,7 +17,7 @@
             {% endif %}
             <br>
             {% if post.author == current_user %}
-            <a href="{{ post.delete() }}">delete</a>
+            <a href="{{ url_for('delete_post', post_id=post.id) }}">delete</a>
             {% endif %}
         </td>
     </tr>

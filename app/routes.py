@@ -39,7 +39,8 @@ def index():
 @login_required
 def explore():
     page = request.args.get('page', 1, type=int)
-    posts = Post.query.order_by(Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
+    posts = Post.query.filter_by(is_deleted=False).order_by(
+        Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
     next_url = url_for('explore', page=posts.next_num) if posts.has_next else None
     prev_url = url_for('explore', page=posts.prev_num) if posts.has_prev else None
 
@@ -134,7 +135,8 @@ def user(username):
         return redirect(url_for('user', username=username))
 
     page = request.args.get('page', 1, type=int)
-    posts = user.posts.order_by(Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
+    posts = user.posts.filter_by(is_deleted=False).order_by(
+        Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
     next_url = url_for('user', username=user.username, page=posts.next_num) if posts.has_next else None
     prev_url = url_for('user', username=user.username, page=posts.prev_num) if posts.has_prev else None
 
@@ -197,12 +199,14 @@ def unfollow(username):
     return redirect(url_for('user', username=username))
 
 
-@app.errorhandler(404)
-def error404(error):
-    return render_template('404.html'), 404
-
-
-@app.errorhandler(500)
-def error500(error):
-    db.session.rollback()
-    return render_template('500.html'), 500
+@app.route('/delete_post/<post_id>')
+@login_required
+def delete_post(post_id):
+    post = Post.query.filter_by(id=post_id).first_or_404()
+    if post.author != current_user:
+        flash('You are not allowed to do this')
+        return redirect(url_for('index'))
+    next_page = request.args.get('next')
+    post.delete()
+    db.session.commit()
+    return redirect(request.referrer) if request.referrer else redirect(url_for('index'))
