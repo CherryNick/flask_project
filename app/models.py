@@ -1,5 +1,5 @@
 from app import db, login
-from sqlalchemy import and_, or_, select
+from sqlalchemy.dialects.postgresql import ENUM
 from datetime import datetime, date, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
@@ -14,9 +14,18 @@ followers = db.Table('followers',
 class FriendRequest(db.Model):
     initiator_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
     target_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
-    status = db.Column(db.Enum('requested', 'approved', 'rejected', name="status"))
+    status = db.Column(ENUM('requested', 'approved', 'rejected', 'unfriended', name="friend_request_status"))
     requested_at = db.Column(db.DateTime, default=datetime.now())
     updated_at = db.Column(db.DateTime, onupdate=datetime.now())
+
+    def approve_request(self):
+        self.status = 'approved'
+
+    def reject_request(self):
+        self.status = 'rejected'
+
+    def unfriend(self):
+        self.status = 'unfriended'
 
 
 class User(UserMixin, db.Model):
@@ -78,6 +87,28 @@ class User(UserMixin, db.Model):
                                     Post.is_deleted == False)
         own = Post.query.filter_by(user_id=self.id, is_deleted=False)
         return friends.union(own).order_by(Post.timestamp.desc())
+
+    def make_friend_request(self, target_user):
+        friend_request = FriendRequest(initiator_id=self.id,
+                                       target_id=target_user.id,
+                                       status='requested')
+        db.session.add(friend_request)
+        db.session.commit()
+        return friend_request
+
+    def friend_status(self, user):
+        friend_request = FriendRequest.query.filter_by(initiator_id=user.id,
+                                                       target_id=self.id).first() or \
+                         FriendRequest.query.filter_by(initiator_id=self.id,
+                                                       target_id=user.id).first()
+        if not friend_request:
+            return None
+        elif friend_request.status == 'requested' and friend_request.target_id == self.id:
+            return 'requested_to'
+        elif friend_request.status == 'requested' and friend_request.target_id == user.id:
+            return 'requested_from'
+        else:
+            return friend_request.status
 
 
 @login.user_loader

@@ -2,7 +2,7 @@ from flask import render_template, flash, redirect, url_for, request
 from app.forms import LoginForm, RegistrationForm, EditProfileForm, CreatePost
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User, Post, Profile
+from app.models import User, Post, Profile, FriendRequest
 from werkzeug.urls import url_parse
 from app.utils import upload_media
 
@@ -210,3 +210,59 @@ def delete_post(post_id):
     post.delete()
     db.session.commit()
     return redirect(request.referrer) if request.referrer else redirect(url_for('index'))
+
+
+@app.route('/friend_request/<username>')
+@login_required
+def friend_request(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if user == current_user:
+        flash('You cannot add yourself to friends!')
+        return redirect(url_for('index'))
+    current_user.make_friend_request(user)
+    return redirect(url_for('user', username=username))
+
+
+@app.route('/approve_request/<username>')
+@login_required
+def approve_request(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if user == current_user:
+        flash('Error!')  # need to change
+        return redirect(url_for('index'))
+    friend_request = FriendRequest.query.filter_by(initiator_id=user.id,
+                                                   target_id=current_user.id, status='requested').first_or_404()
+    friend_request.approve_request()
+    db.session.commit()
+    return redirect(url_for('user', username=username))  # need change to friends page
+
+
+@app.route('/reject_request/<username>')
+@login_required
+def reject_request(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if user == current_user:
+        flash('Error!')  # need to change
+        return redirect(url_for('index'))
+    friend_request = FriendRequest.query.filter_by(initiator_id=user.id,
+                                                   target_id=current_user.id, status='requested').first_or_404()
+    friend_request.reject_request()
+    db.session.commit()
+    return redirect(url_for('user', username=username))  # need change to friends page
+
+
+@app.route('/unfriend/<username>')
+@login_required
+def unfriend(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if user == current_user:
+        flash('Error!')  # need to change
+        return redirect(url_for('index'))
+    friend_request = FriendRequest.query.filter_by(initiator_id=user.id,
+                                                   target_id=current_user.id, status='approved').first() or \
+                     FriendRequest.query.filter_by(initiator_id=current_user.id,
+                                                   target_id=user.id, status='approved').first()
+
+    friend_request.unfriend()
+    db.session.commit()
+    return redirect(url_for('user', username=username))  # need change to friends page
