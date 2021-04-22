@@ -12,8 +12,8 @@ def index():
     if not current_user.is_anonymous:
         user = current_user
 
-        page=request.args.get('page', 1, type=int)
-        posts = user.followed_posts().paginate(page, app.config['POST_PER_PAGE'], False)
+        page = request.args.get('page', 1, type=int)
+        posts = user.friends_posts().paginate(page, app.config['POST_PER_PAGE'], False)
         next_url = url_for('index', page=posts.next_num) if posts.has_next else None
         prev_url = url_for('index', page=posts.prev_num) if posts.has_prev else None
 

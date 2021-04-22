@@ -1,5 +1,5 @@
 from app import db, login
-from sqlalchemy import or_, and_
+from sqlalchemy import and_, or_, select
 from datetime import datetime, date, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
@@ -9,6 +9,14 @@ import pathlib
 followers = db.Table('followers',
                      db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
                      db.Column('followed_id', db.Integer, db.ForeignKey('user.id')))
+
+
+class FriendRequest(db.Model):
+    initiator_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    target_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    status = db.Column(db.Enum('requested', 'approved', 'rejected', name="status"))
+    requested_at = db.Column(db.DateTime, default=datetime.now())
+    updated_at = db.Column(db.DateTime, onupdate=datetime.now())
 
 
 class User(UserMixin, db.Model):
@@ -22,6 +30,10 @@ class User(UserMixin, db.Model):
                                primaryjoin=(followers.c.follower_id == id),
                                secondaryjoin=(followers.c.followed_id == id),
                                backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
+    requested_friend = db.relationship('FriendRequest', foreign_keys='FriendRequest.initiator_id',
+                                       backref='requested_user', lazy='dynamic')
+    recieved_friend = db.relationship('FriendRequest', foreign_keys='FriendRequest.target_id',
+                                      backref='recieved_user', lazy='dynamic')
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -48,6 +60,24 @@ class User(UserMixin, db.Model):
             followers.c.follower_id == self.id, Post.is_deleted == False)
         own = Post.query.filter_by(user_id=self.id, is_deleted=False)
         return followed.union(own).order_by(Post.timestamp.desc())
+
+    @property
+    def friend_list(self):
+        return db.session.query(User).filter(User.id == FriendRequest.target_id,
+                                             FriendRequest.initiator_id == self.id,
+                                             FriendRequest.status == 'approved'
+                                             ).union(
+            db.session.query(User).filter(User.id == FriendRequest.initiator_id,
+                                          FriendRequest.target_id == self.id,
+                                          FriendRequest.status == 'approved')).all()
+
+    def friends_posts(self):
+        """Костыли какие то"""
+        friends_id = [friend.id for friend in self.friend_list]
+        friends = Post.query.filter(Post.user_id.in_(friends_id),
+                                    Post.is_deleted == False)
+        own = Post.query.filter_by(user_id=self.id, is_deleted=False)
+        return friends.union(own).order_by(Post.timestamp.desc())
 
 
 @login.user_loader
