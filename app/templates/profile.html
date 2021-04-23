@@ -45,7 +45,7 @@
     </div>
 </div>
 
-
+<a href="{{ url_for('friends', username=user.username) }}">{{user.username}}'s friends</a>
 
 <h4>New post:</h4>
 {% include "_post_form.html" %}

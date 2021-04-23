@@ -266,3 +266,11 @@ def unfriend(username):
     friend_request.unfriend()
     db.session.commit()
     return redirect(url_for('user', username=username))  # need change to friends page
+
+
+@app.route('/<username>/friends')
+@login_required
+def friends(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    friend_list = user.friend_list
+    return render_template('friends.html', friends=friend_list, username=username)

@@ -1,0 +1,17 @@
+<table>
+    <tr valign="top">
+        <td>{% if friend.profile.media %}
+            <img src="{{ friend.profile.media.path }}" alt="photo" class="small_avatar">
+            {% endif %}
+        </td>
+        <td>
+            <a href="{{ url_for('user', username=friend.username) }}">
+                {{ friend.username }}
+            </a>
+            <br>
+            <a href="">Send message</a>
+            <br>
+            <a href="{{ url_for('unfriend', username=friend.username) }}">Unfriend</a>
+        </td>
+    </tr>
+</table>
