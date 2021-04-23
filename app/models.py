@@ -6,10 +6,6 @@ from flask_login import UserMixin
 from os import path, mkdir
 import pathlib
 
-followers = db.Table('followers',
-                     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
-                     db.Column('followed_id', db.Integer, db.ForeignKey('user.id')))
-
 
 class FriendRequest(db.Model):
     initiator_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
@@ -35,10 +31,6 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     profile = db.relationship('Profile', backref='profile', uselist=False)
-    followed = db.relationship('User', secondary=followers,
-                               primaryjoin=(followers.c.follower_id == id),
-                               secondaryjoin=(followers.c.followed_id == id),
-                               backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
     requested_friend = db.relationship('FriendRequest', foreign_keys='FriendRequest.initiator_id',
                                        backref='requested_user', lazy='dynamic')
     recieved_friend = db.relationship('FriendRequest', foreign_keys='FriendRequest.target_id',
@@ -52,23 +44,6 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-
-    def is_following(self, user):
-        return self.followed.filter(followers.c.followed_id == user.id).count() > 0
-
-    def follow(self, user):
-        if not self.is_following(user) and self.id != user.id:
-            self.followed.append(user)
-
-    def unfollow(self, user):
-        if self.is_following(user):
-            self.followed.remove(user)
-
-    def followed_posts(self):
-        followed = Post.query.join(followers, followers.c.followed_id == Post.user_id).filter(
-            followers.c.follower_id == self.id, Post.is_deleted == False)
-        own = Post.query.filter_by(user_id=self.id, is_deleted=False)
-        return followed.union(own).order_by(Post.timestamp.desc())
 
     @property
     def friend_list(self):

@@ -13,14 +13,6 @@
 
         {% if current_user.username == user.username %}
         <a href="{{ url_for('edit_profile', username=current_user.username) }}">Edit</a>
-        {% elif not current_user.is_following(user) %}
-        <a href="{{ url_for('follow', username=user.username) }}">Follow</a>
-        {% elif current_user.is_following(user) %}
-        <a href="{{ url_for('unfollow', username=user.username) }}">Unfollow</a>
-        {% endif %}
-
-        {% if current_user.username == user.username %}
-        <a href="{{ url_for('edit_profile', username=current_user.username) }}">Edit</a>
         {% elif not current_user.friend_status(user) or current_user.friend_status(user) == 'unfriended' %}
         <a href="{{ url_for('friend_request', username=user.username) }}">Add friend</a>
         {% elif current_user.friend_status(user) == 'requested_to' %}
