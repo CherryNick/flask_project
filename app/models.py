@@ -33,8 +33,9 @@ class User(UserMixin, db.Model):
     profile = db.relationship('Profile', backref='profile', uselist=False)
     requested_friend = db.relationship('FriendRequest', foreign_keys='FriendRequest.initiator_id',
                                        backref='requested_user', lazy='dynamic')
-    recieved_friend = db.relationship('FriendRequest', foreign_keys='FriendRequest.target_id',
-                                      backref='recieved_user', lazy='dynamic')
+    received_friend = db.relationship('FriendRequest', foreign_keys='FriendRequest.target_id',
+                                      backref='received_user', lazy='dynamic')
+    messages = db.relationship('Message', foreign_keys='Message.sender_id', backref='author')
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -84,6 +85,18 @@ class User(UserMixin, db.Model):
             return 'requested_from'
         else:
             return friend_request.status
+
+    def get_users_with_messages(self):
+        """need to make order by last message"""
+        return db.session.query(User).join(Message, User.id == Message.sender_id).filter(
+            Message.receiver_id == self.id).union(
+            db.session.query(User).join(Message, User.id == Message.receiver_id).filter(
+                Message.sender_id == self.id))  # .order_by(Message.created_at.desc())
+
+    def get_chat_with_user(self, user):
+        return db.session.query(Message).filter_by(receiver_id=self.id, sender_id=user.id).union(
+            db.session.query(Message).filter_by(receiver_id=user.id, sender_id=self.id).order_by(
+                Message.created_at.desc()))
 
 
 @login.user_loader
@@ -177,3 +190,11 @@ class Media(db.Model):
 
     def get_path(self):
         return self.path
+
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    body = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.now())

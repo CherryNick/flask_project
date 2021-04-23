@@ -2,7 +2,7 @@ from flask import render_template, flash, redirect, url_for, request
 from app.forms import LoginForm, RegistrationForm, EditProfileForm, CreatePost
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User, Post, Profile, FriendRequest
+from app.models import User, Post, Profile, FriendRequest, Message
 from werkzeug.urls import url_parse
 from app.utils import upload_media
 
@@ -175,6 +175,32 @@ def edit_profile(username):
     return render_template('edit_profile.html', user=current_user, form=form)
 
 
+@app.route('/<username>/friends')
+@login_required
+def friends(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    friend_list = user.friend_list
+    return render_template('friends.html', friends=friend_list, username=username)
+
+
+@app.route('/messenger')
+@login_required
+def messenger():
+    users = current_user.get_users_with_messages()
+    return render_template('messenger.html', users=users)
+
+
+@app.route('/messenger/<username>', methods=['GET', 'POST'])
+@login_required
+def chat(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    messages = current_user.get_chat_with_user(user)
+
+    #form
+
+    return render_template('chat.html', messages=messages, username=username)
+
+
 @app.route('/delete_post/<post_id>')
 @login_required
 def delete_post(post_id):
@@ -182,7 +208,6 @@ def delete_post(post_id):
     if post.author != current_user:
         flash('You are not allowed to do this')
         return redirect(url_for('index'))
-    next_page = request.args.get('next')
     post.delete()
     db.session.commit()
     return redirect(request.referrer) if request.referrer else redirect(url_for('index'))
@@ -244,9 +269,3 @@ def unfriend(username):
     return redirect(url_for('user', username=username))  # need change to friends page
 
 
-@app.route('/<username>/friends')
-@login_required
-def friends(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    friend_list = user.friend_list
-    return render_template('friends.html', friends=friend_list, username=username)

@@ -9,7 +9,7 @@
                 {{ friend.username }}
             </a>
             <br>
-            <a href="">Send message</a>
+            <a href="{{ url_for('chat', username=friend.username) }}">Send message</a>
             <br>
             <a href="{{ url_for('unfriend', username=friend.username) }}">Unfriend</a>
         </td>

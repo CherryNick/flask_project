@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>Chats:</h3>
+{% if users %}
+{% for user in users %}
+{% include "_user_chat.html" %}
+{% endfor %}
+{% else %}
+<a href="">Start messenging</a>
+{% endif %}
+
+{% endblock %}
