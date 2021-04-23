@@ -1,14 +1,27 @@
 from app import db, login
-from sqlalchemy import or_, and_
+from sqlalchemy.dialects.postgresql import ENUM
 from datetime import datetime, date, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from os import path, mkdir
 import pathlib
 
-followers = db.Table('followers',
-                     db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
-                     db.Column('followed_id', db.Integer, db.ForeignKey('user.id')))
+
+class FriendRequest(db.Model):
+    initiator_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    target_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    status = db.Column(ENUM('requested', 'approved', 'rejected', 'unfriended', name="friend_request_status"))
+    requested_at = db.Column(db.DateTime, default=datetime.now())
+    updated_at = db.Column(db.DateTime, onupdate=datetime.now())
+
+    def approve_request(self):
+        self.status = 'approved'
+
+    def reject_request(self):
+        self.status = 'rejected'
+
+    def unfriend(self):
+        self.status = 'unfriended'
 
 
 class User(UserMixin, db.Model):
@@ -18,10 +31,11 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     profile = db.relationship('Profile', backref='profile', uselist=False)
-    followed = db.relationship('User', secondary=followers,
-                               primaryjoin=(followers.c.follower_id == id),
-                               secondaryjoin=(followers.c.followed_id == id),
-                               backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
+    requested_friend = db.relationship('FriendRequest', foreign_keys='FriendRequest.initiator_id',
+                                       backref='requested_user', lazy='dynamic')
+    received_friend = db.relationship('FriendRequest', foreign_keys='FriendRequest.target_id',
+                                      backref='received_user', lazy='dynamic')
+    messages = db.relationship('Message', foreign_keys='Message.sender_id', backref='author')
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -32,22 +46,57 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def is_following(self, user):
-        return self.followed.filter(followers.c.followed_id == user.id).count() > 0
+    @property
+    def friend_list(self):
+        return db.session.query(User).filter(User.id == FriendRequest.target_id,
+                                             FriendRequest.initiator_id == self.id,
+                                             FriendRequest.status == 'approved'
+                                             ).union(
+            db.session.query(User).filter(User.id == FriendRequest.initiator_id,
+                                          FriendRequest.target_id == self.id,
+                                          FriendRequest.status == 'approved')).all()
 
-    def follow(self, user):
-        if not self.is_following(user) and self.id != user.id:
-            self.followed.append(user)
+    def friends_posts(self):
+        """Костыли какие то"""
+        friends_id = [friend.id for friend in self.friend_list]
+        friends = Post.query.filter(Post.user_id.in_(friends_id),
+                                    Post.is_deleted == False)
+        own = Post.query.filter_by(user_id=self.id, is_deleted=False)
+        return friends.union(own).order_by(Post.timestamp.desc())
 
-    def unfollow(self, user):
-        if self.is_following(user):
-            self.followed.remove(user)
+    def make_friend_request(self, target_user):
+        friend_request = FriendRequest(initiator_id=self.id,
+                                       target_id=target_user.id,
+                                       status='requested')
+        db.session.add(friend_request)
+        db.session.commit()
+        return friend_request
 
-    def followed_posts(self):
-        followed = Post.query.join(followers, followers.c.followed_id == Post.user_id).filter(
-            followers.c.follower_id == self.id)
-        own = Post.query.filter_by(user_id=self.id)
-        return followed.union(own).order_by(Post.timestamp.desc())
+    def friend_status(self, user):
+        friend_request = FriendRequest.query.filter_by(initiator_id=user.id,
+                                                       target_id=self.id).first() or \
+                         FriendRequest.query.filter_by(initiator_id=self.id,
+                                                       target_id=user.id).first()
+        if not friend_request:
+            return None
+        elif friend_request.status == 'requested' and friend_request.target_id == self.id:
+            return 'requested_to'
+        elif friend_request.status == 'requested' and friend_request.target_id == user.id:
+            return 'requested_from'
+        else:
+            return friend_request.status
+
+    def get_users_with_messages(self):
+        """need to make order by last message"""
+        return db.session.query(User).join(Message, User.id == Message.sender_id).filter(
+            Message.receiver_id == self.id).union(
+            db.session.query(User).join(Message, User.id == Message.receiver_id).filter(
+                Message.sender_id == self.id))  # .order_by(Message.created_at.desc())
+
+    def get_chat_with_user(self, user):
+        return db.session.query(Message).filter_by(receiver_id=self.id, sender_id=user.id).union(
+            db.session.query(Message).filter_by(receiver_id=user.id, sender_id=self.id).order_by(
+                Message.created_at.desc()))
 
 
 @login.user_loader
@@ -141,3 +190,11 @@ class Media(db.Model):
 
     def get_path(self):
         return self.path
+
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    body = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.now())

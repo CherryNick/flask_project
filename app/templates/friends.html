@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3>{{ username }}'s friend list</h3>
+{% if friends %}
+{% for friend in friends %}
+{% include "_friend.html" %}
+{% endfor %}
+{% else %}
+<h5>Empty yet :(</h5>
+{% endif %}
+
+{% endblock %}

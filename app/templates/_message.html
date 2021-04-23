@@ -1,0 +1,33 @@
+<table>
+    <tr valign="top">
+        {% if message.author == current_user %}
+        <td>
+            <a href="{{ url_for('user', username=message.author.username) }}">
+                {{ message.author.username }}
+            </a>
+            <br>
+            <p>{{ message.body }}</p>
+            <br>
+            {{ message.created_at }}
+        </td>
+        <td>{% if message.author.profile.media %}
+            <img src="{{ message.author.profile.media.path }}" alt="photo" class="small_avatar">
+            {% endif %}
+        </td>
+        {% else %}
+        <td>{% if message.author.profile.media %}
+            <img src="{{ message.author.profile.media.path }}" alt="photo" class="small_avatar">
+            {% endif %}
+        </td>
+        <td>
+            <a href="{{ url_for('user', username=message.author.username) }}">
+                {{ message.author.username }}
+            </a>
+            <br>
+            <p>{{ message.body }}</p>
+            <br>
+            {{ message.created_at }}
+        </td>
+        {% endif %}
+    </tr>
+</table>

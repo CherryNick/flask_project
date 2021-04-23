@@ -4,7 +4,7 @@
 <div class="user_info">
     <div>
         {% if user.profile.media %}
-        <img src="{{ post.author.profile.media.path }}" alt="photo" class="small_avatar">
+        <img src="{{ user.profile.media.path }}" alt="photo" class="profile_avatar">
         {% endif %}
     </div>
     <div>
@@ -13,10 +13,15 @@
 
         {% if current_user.username == user.username %}
         <a href="{{ url_for('edit_profile', username=current_user.username) }}">Edit</a>
-        {% elif not current_user.is_following(user) %}
-        <a href="{{ url_for('follow', username=user.username) }}">Follow</a>
-        {% elif current_user.is_following(user) %}
-        <a href="{{ url_for('unfollow', username=user.username) }}">Unfollow</a>
+        {% elif not current_user.friend_status(user) or current_user.friend_status(user) == 'unfriended' %}
+        <a href="{{ url_for('friend_request', username=user.username) }}">Add friend</a>
+        {% elif current_user.friend_status(user) == 'requested_to' %}
+        <a href="{{ url_for('approve_request', username=user.username) }}">Approve</a>
+        <a href="{{ url_for('reject_request', username=user.username) }}">Reject</a>
+        {% elif current_user.friend_status(user) == 'requested_from' %}
+        <h6>Friend request sended</h6>
+        {% elif current_user.friend_status(user) == 'requested_from' %}
+        <a href="{{ url_for('unfriend', username=user.username) }}">Delete from friends</a>
         {% endif %}
 
         <h3>Info:</h3>
@@ -32,7 +37,7 @@
     </div>
 </div>
 
-
+<a href="{{ url_for('friends', username=user.username) }}">{{user.username}}'s friends</a>
 
 <h4>New post:</h4>
 {% include "_post_form.html" %}

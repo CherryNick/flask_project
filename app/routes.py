@@ -2,7 +2,7 @@ from flask import render_template, flash, redirect, url_for, request
 from app.forms import LoginForm, RegistrationForm, EditProfileForm, CreatePost
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User, Post, Profile
+from app.models import User, Post, Profile, FriendRequest, Message
 from werkzeug.urls import url_parse
 from app.utils import upload_media
 
@@ -12,8 +12,8 @@ def index():
     if not current_user.is_anonymous:
         user = current_user
 
-        page=request.args.get('page', 1, type=int)
-        posts = user.followed_posts().paginate(page, app.config['POST_PER_PAGE'], False)
+        page = request.args.get('page', 1, type=int)
+        posts = user.friends_posts().paginate(page, app.config['POST_PER_PAGE'], False)
         next_url = url_for('index', page=posts.next_num) if posts.has_next else None
         prev_url = url_for('index', page=posts.prev_num) if posts.has_prev else None
 
@@ -39,7 +39,8 @@ def index():
 @login_required
 def explore():
     page = request.args.get('page', 1, type=int)
-    posts = Post.query.order_by(Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
+    posts = Post.query.filter_by(is_deleted=False).order_by(
+        Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
     next_url = url_for('explore', page=posts.next_num) if posts.has_next else None
     prev_url = url_for('explore', page=posts.prev_num) if posts.has_prev else None
 
@@ -134,7 +135,8 @@ def user(username):
         return redirect(url_for('user', username=username))
 
     page = request.args.get('page', 1, type=int)
-    posts = user.posts.order_by(Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
+    posts = user.posts.filter_by(is_deleted=False).order_by(
+        Post.timestamp.desc()).paginate(page, app.config['POST_PER_PAGE'], False)
     next_url = url_for('user', username=user.username, page=posts.next_num) if posts.has_next else None
     prev_url = url_for('user', username=user.username, page=posts.prev_num) if posts.has_prev else None
 
@@ -173,36 +175,97 @@ def edit_profile(username):
     return render_template('edit_profile.html', user=current_user, form=form)
 
 
-@app.route('/follow/<username>')
+@app.route('/<username>/friends')
 @login_required
-def follow(username):
+def friends(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    friend_list = user.friend_list
+    return render_template('friends.html', friends=friend_list, username=username)
+
+
+@app.route('/messenger')
+@login_required
+def messenger():
+    users = current_user.get_users_with_messages()
+    return render_template('messenger.html', users=users)
+
+
+@app.route('/messenger/<username>', methods=['GET', 'POST'])
+@login_required
+def chat(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    messages = current_user.get_chat_with_user(user)
+
+    #form
+
+    return render_template('chat.html', messages=messages, username=username)
+
+
+@app.route('/delete_post/<post_id>')
+@login_required
+def delete_post(post_id):
+    post = Post.query.filter_by(id=post_id).first_or_404()
+    if post.author != current_user:
+        flash('You are not allowed to do this')
+        return redirect(url_for('index'))
+    post.delete()
+    db.session.commit()
+    return redirect(request.referrer) if request.referrer else redirect(url_for('index'))
+
+
+@app.route('/friend_request/<username>')
+@login_required
+def friend_request(username):
     user = User.query.filter_by(username=username).first_or_404()
     if user == current_user:
-        flash('You cannot follow yourself!')
+        flash('You cannot add yourself to friends!')
         return redirect(url_for('index'))
-    current_user.follow(user)
-    db.session.commit()
+    current_user.make_friend_request(user)
     return redirect(url_for('user', username=username))
 
 
-@app.route('/unfollow/<username>')
+@app.route('/approve_request/<username>')
 @login_required
-def unfollow(username):
+def approve_request(username):
     user = User.query.filter_by(username=username).first_or_404()
     if user == current_user:
-        flash('You cannot unfollow yourself!')
+        flash('Error!')  # need to change
         return redirect(url_for('index'))
-    current_user.unfollow(user)
+    friend_request = FriendRequest.query.filter_by(initiator_id=user.id,
+                                                   target_id=current_user.id, status='requested').first_or_404()
+    friend_request.approve_request()
     db.session.commit()
-    return redirect(url_for('user', username=username))
+    return redirect(url_for('user', username=username))  # need change to friends page
 
 
-@app.errorhandler(404)
-def error404(error):
-    return render_template('404.html'), 404
+@app.route('/reject_request/<username>')
+@login_required
+def reject_request(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if user == current_user:
+        flash('Error!')  # need to change
+        return redirect(url_for('index'))
+    friend_request = FriendRequest.query.filter_by(initiator_id=user.id,
+                                                   target_id=current_user.id, status='requested').first_or_404()
+    friend_request.reject_request()
+    db.session.commit()
+    return redirect(url_for('user', username=username))  # need change to friends page
 
 
-@app.errorhandler(500)
-def error500(error):
-    db.session.rollback()
-    return render_template('500.html'), 500
+@app.route('/unfriend/<username>')
+@login_required
+def unfriend(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    if user == current_user:
+        flash('Error!')  # need to change
+        return redirect(url_for('index'))
+    friend_request = FriendRequest.query.filter_by(initiator_id=user.id,
+                                                   target_id=current_user.id, status='approved').first() or \
+                     FriendRequest.query.filter_by(initiator_id=current_user.id,
+                                                   target_id=user.id, status='approved').first()
+
+    friend_request.unfriend()
+    db.session.commit()
+    return redirect(url_for('user', username=username))  # need change to friends page
+
+
