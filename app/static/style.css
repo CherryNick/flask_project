@@ -1,16 +1,163 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1024px;
+    margin: 0 auto;
+}
+
+.content {
+    margin-top: 15px;
+    min-height: 100vh;
+    padding: 10px 50px;
+}
+
+.header {
+    height: 30px;
+    background: linear-gradient(to bottom,white 0%, rgb(243, 211, 224) 30%,  powderblue 80%);
+    padding: 5px 40px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.home_button {
+    padding-right: 100px;
+}
+
+.header_links {
+    display: flex;
+    justify-content: space-between;
+    flex-grow: 1;
+}
+
+.header_link {
+    text-decoration: none;
+    font-size: 25px;
+    font-weight: 500;
+    color: black;
+    font-family: Georgia, serif;
+}
+
+.profile {
+    display: flex;
+}
+
+
+
+.post_wall {
+    padding: 10px 50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.post_form {
+    border-radius: 20px;
+    min-width: 560px;
+    max-width: 560px;
+    box-shadow: 3px 10px 20px lightblue;
+    padding: 20px;
+}
+
+.post_form_text {
+    max-width: 560px;
+    min-width: 560px;
+    min-height: 100px;
+}
+
+.post_form_footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.post {
+    min-width: 560px;
+    max-width: 560px;
+    margin-top: 20px;
+    border-radius: 20px;
+    box-shadow: 3px 10px 20px lightblue;
+    padding: 20px
+}
+
+.post_avatar {
+    min-width: 100px;
+    max-width: 100px;
+}
+
+.post_content {
+    min-width: 400px;
+    max-width: 400px;
+}
+
+.post_footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.delete_post {
+    text-decoration: none;
+    color: lightblue;
+}
+
 .small_avatar {
     width: 80px;
     height: 80px;
+    border-radius: 40px;
 }
+
+.friends {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.friend {
+    margin-top: 15px;
+    padding: 10px;
+    min-width: 600px;
+    max-width: 600px;
+    min-height: 110px;
+    max-height: 108px;
+    border-radius: 10px;
+    box-shadow: 3px 10px 20px rgb(179, 191, 196);
+}
+
+.friend_photo {
+    min-width: 80px;
+    max-width: 80px;
+}
+
+.friend_info {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+td.friend_buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
 
 .profile_avatar {
     max-width: 300px;
 }
 
-.user_info {
-    display: flex;
-}
+
 
 .post_media {
-    max-width: 500px;
+    max-width: 400px;
+}
+
+.footer {
+    height: 30px;
+    background: linear-gradient(to top,white 0%, rgb(243, 211, 224) 30%,  powderblue 80%);
+    padding: 5px 40px;
+    display: flex;
+    justify-content: space-between;
 }

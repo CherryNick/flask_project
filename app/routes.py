@@ -5,6 +5,14 @@ from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User, Post, Profile, FriendRequest, Message
 from werkzeug.urls import url_parse
 from app.utils import upload_media
+from sqlalchemy import func
+
+
+@app.before_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.last_seen = func.now()
+        db.session.commit()
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -180,7 +188,9 @@ def edit_profile(username):
 def friends(username):
     user = User.query.filter_by(username=username).first_or_404()
     friend_list = user.friend_list
-    return render_template('friends.html', friends=friend_list, username=username)
+    friend_requests = user.get_friend_requests()
+    return render_template('friends.html', friends=friend_list,
+                           username=username, friend_requests=friend_requests.all())
 
 
 @app.route('/messenger')
@@ -196,7 +206,7 @@ def chat(username):
     user = User.query.filter_by(username=username).first_or_404()
     messages = current_user.get_chat_with_user(user)
 
-    #form
+    # form
 
     return render_template('chat.html', messages=messages, username=username)
 
@@ -235,7 +245,7 @@ def approve_request(username):
                                                    target_id=current_user.id, status='requested').first_or_404()
     friend_request.approve_request()
     db.session.commit()
-    return redirect(url_for('user', username=username))  # need change to friends page
+    return redirect(request.referrer) if request.referrer else redirect(url_for('index'))
 
 
 @app.route('/reject_request/<username>')
@@ -249,7 +259,7 @@ def reject_request(username):
                                                    target_id=current_user.id, status='requested').first_or_404()
     friend_request.reject_request()
     db.session.commit()
-    return redirect(url_for('user', username=username))  # need change to friends page
+    return redirect(request.referrer) if request.referrer else redirect(url_for('index'))
 
 
 @app.route('/unfriend/<username>')
@@ -264,8 +274,6 @@ def unfriend(username):
                      FriendRequest.query.filter_by(initiator_id=current_user.id,
                                                    target_id=user.id, status='approved').first()
 
-    friend_request.unfriend()
+    db.session.delete(friend_request)
     db.session.commit()
-    return redirect(url_for('user', username=username))  # need change to friends page
-
-
+    return redirect(request.referrer) if request.referrer else redirect(url_for('index'))

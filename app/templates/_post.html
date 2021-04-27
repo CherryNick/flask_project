@@ -1,24 +1,30 @@
-<table>
-    <tr valign="top">
-        <td>{% if post.author.profile.media %}
-            <img src="{{ post.author.profile.media.path }}" alt="photo" class="small_avatar">
-            {% endif %}
-        </td>
-        <td>
-            <a href="{{ url_for('user', username=post.author.username) }}">
-                {{ post.author.username }}
-            </a>
-            says:<br>{{ post.body }}
-            <br>
-            {{ post.get_date() }}
-            <br>
-            {% if post.photo_id %}
-            <img class="post_media" src="{{ post.media.path }}" alt="photo">
-            {% endif %}
-            <br>
-            {% if post.author == current_user %}
-            <a href="{{ url_for('delete_post', post_id=post.id) }}">delete</a>
-            {% endif %}
-        </td>
-    </tr>
-</table>
+<div class="post">
+    <table>
+        <tr valign="top">
+            <td class="post_avatar">{% if post.author.profile.media %}
+                <img src="{{ post.author.profile.media.path }}" alt="photo" class="small_avatar">
+                {% endif %}
+            </td>
+            <td class="post_content">
+                <a href="{{ url_for('user', username=post.author.username) }}">
+                    {{ post.author.username }}
+                </a>
+                says:<br>{{ post.body }}
+                <br>
+                {% if post.photo_id %}
+                <img class="post_media" src="{{ post.media.path }}" alt="photo">
+                {% endif %}
+                <br>
+                <div class="post_footer">
+                    <div class="post_footer_date">{{ post.get_date() }}</div>
+                    <div class="post_footer_delete">
+                        {% if post.author == current_user %}
+                        <a class="delete_post" href="{{ url_for('delete_post', post_id=post.id) }}">delete</a>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </td>
+        </tr>
+    </table>
+</div>

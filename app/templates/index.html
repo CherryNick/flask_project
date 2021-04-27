@@ -2,43 +2,33 @@
 
 {% block content %}
 
-<h1>TODO</h1>
-<ul>
-    <li><s>foloweers -> friends</s></li>
-    <li>messages
-        <ol>
-            <li>message form</li>
-            <li>message counter</li>
-            <li>...</li>
-        </ol>
-    </li>
-    <li>css</li>
-</ul>
-
+<h1>Welcome to SSSN - Some Simple Social Network</h1>
 {% if current_user.is_anonymous %}
-<h1>Hello, Stranger!</h1>
+<h2>Hello, Stranger!</h2>
 <p>First time here?</p>
 <a href="{{ url_for('register') }}">Sign up</a>
 <p>Already have account?</p>
 <a href="{{ url_for('login') }}">Sign in</a>
 {% else %}
-<h1>Hello, {{ current_user.username }}!</h1>
+<h2>Hello, {{ current_user.username }}!</h2>
 <h4>What's new?</h4>
-{% include "_post_form.html" %}
-<div>
-    {% if posts %}
-    {% for post in posts %}
-    {% include "_post.html" %}
-    {% endfor %}
-    {% if prev_url %}
-    <a href="{{ prev_url }}">Previous page</a>
-    {% endif %}
-    {% if next_url %}
-    <a href="{{ next_url }}">Next page</a>
-    {% endif %}
-    {% else %}
-    <p>There is no posts yet :(</p>
-    {% endif %}
+<div class="post_wall">
+    {% include "_post_form.html" %}
+    <div>
+        {% if posts %}
+        {% for post in posts %}
+        {% include "_post.html" %}
+        {% endfor %}
+        {% if prev_url %}
+        <a href="{{ prev_url }}">Previous page</a>
+        {% endif %}
+        {% if next_url %}
+        <a href="{{ next_url }}">Next page</a>
+        {% endif %}
+        {% else %}
+        <p>There is no posts yet :(</p>
+        {% endif %}
+    </div>
 </div>
 
 {% endif %}
