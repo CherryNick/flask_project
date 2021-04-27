@@ -1,13 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h3>{{ username }}'s friend list</h3>
-{% if friends %}
-{% for friend in friends %}
-{% include "_friend.html" %}
-{% endfor %}
-{% else %}
-<h5>Empty yet :(</h5>
+{% if username == current_user.username and friend_requests %}
+<div class="friends">
+    <h3>Friend requests</h3>
+    {% for friend in friend_requests %}
+    {% include "_friend_request.html" %}
+    {% endfor %}
+    <hr>
+</div>
 {% endif %}
+
+<h3>{{ username }} friend list</h3>
+<div class="friends">
+    {% if friends %}
+    {% for friend in friends %}
+    {% include "_friend.html" %}
+    {% endfor %}
+    {% else %}
+    <h5>Empty yet :(</h5>
+    {% endif %}
+</div>
 
 {% endblock %}

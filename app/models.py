@@ -1,5 +1,6 @@
 from app import db, login
 from sqlalchemy.dialects.postgresql import ENUM
+from sqlalchemy import func
 from datetime import datetime, date, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
@@ -7,12 +8,43 @@ from os import path, mkdir
 import pathlib
 
 
+def format_time(time_field):
+    month_to_str = {1: 'jan',
+                    2: 'feb',
+                    3: 'mar',
+                    4: 'apr',
+                    5: 'may',
+                    6: 'jun',
+                    7: 'jul',
+                    8: 'aug',
+                    9: 'sep',
+                    10: 'oct',
+                    11: 'nov',
+                    12: 'dec'}
+
+    time_diff = datetime.now() - time_field
+    if time_diff < timedelta(minutes=1):
+        return 'just now'
+    elif time_diff < timedelta(minutes=60):
+        return f'{time_diff.seconds // 60} minutes ago'
+    elif datetime.now().day - time_field.day < 1:
+        return f'today {time_field.hour:0>2d}:{time_field.minute:0>2d}'
+    elif datetime.now().day - time_field.day == 1:
+        return f'yesterday {time_field.hour:0>2d}:{time_field.minute:0>2d}'
+    elif datetime.now().year - time_field.year < 1:
+        return f'{time_field.day} {month_to_str[time_field.month]} ' \
+               f'{time_field.hour:0>2d}:{time_field.minute:0>2d}'
+    else:
+        return f'{time_field.day} {month_to_str[time_field.month]} {time_field.year} ' \
+               f'{time_field.hour:0>2d}:{time_field.minute:0>2d}'
+
+
 class FriendRequest(db.Model):
     initiator_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
     target_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
     status = db.Column(ENUM('requested', 'approved', 'rejected', 'unfriended', name="friend_request_status"))
-    requested_at = db.Column(db.DateTime, default=datetime.now())
-    updated_at = db.Column(db.DateTime, onupdate=datetime.now())
+    requested_at = db.Column(db.DateTime, default=func.current_timestamp())
+    updated_at = db.Column(db.DateTime, onupdate=func.current_timestamp())
 
     def approve_request(self):
         self.status = 'approved'
@@ -20,15 +52,15 @@ class FriendRequest(db.Model):
     def reject_request(self):
         self.status = 'rejected'
 
-    def unfriend(self):
-        self.status = 'unfriended'
-
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True, nullable=False)
     email = db.Column(db.String(120), index=True, unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    last_seen = db.Column(db.DateTime, index=True, default=func.current_timestamp())
+    firstname = db.Column(db.String(50))
+    lastname = db.Column(db.String(80))
     posts = db.relationship('Post', backref='author', lazy='dynamic')
     profile = db.relationship('Profile', backref='profile', uselist=False)
     requested_friend = db.relationship('FriendRequest', foreign_keys='FriendRequest.initiator_id',
@@ -65,10 +97,14 @@ class User(UserMixin, db.Model):
         return friends.union(own).order_by(Post.timestamp.desc())
 
     def make_friend_request(self, target_user):
-        friend_request = FriendRequest(initiator_id=self.id,
-                                       target_id=target_user.id,
-                                       status='requested')
-        db.session.add(friend_request)
+        friend_request = FriendRequest.query.filter_by(initiator_id=self.id, target_id=target_user.id).first()
+        if friend_request:
+            friend_request.status = 'requested'
+        else:
+            friend_request = FriendRequest(initiator_id=self.id,
+                                           target_id=target_user.id,
+                                           status='requested')
+            db.session.add(friend_request)
         db.session.commit()
         return friend_request
 
@@ -86,6 +122,11 @@ class User(UserMixin, db.Model):
         else:
             return friend_request.status
 
+    def get_friend_requests(self):
+        return db.session.query(User).join(FriendRequest, FriendRequest.initiator_id == User.id).filter(
+            FriendRequest.status == 'requested', FriendRequest.target_id == self.id).order_by(
+            FriendRequest.requested_at.desc())
+
     def get_users_with_messages(self):
         """need to make order by last message"""
         return db.session.query(User).join(Message, User.id == Message.sender_id).filter(
@@ -98,6 +139,9 @@ class User(UserMixin, db.Model):
             db.session.query(Message).filter_by(receiver_id=user.id, sender_id=self.id).order_by(
                 Message.created_at.desc()))
 
+    def get_last_seen(self):
+        return format_time(self.last_seen)
+
 
 @login.user_loader
 def load_user(id):
@@ -107,7 +151,7 @@ def load_user(id):
 class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.String(140))
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.now())
+    timestamp = db.Column(db.DateTime, index=True, default=func.current_timestamp())
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     photo_id = db.Column(db.Integer, db.ForeignKey('media.id'))
     is_deleted = db.Column(db.Boolean, default=False)
@@ -117,34 +161,7 @@ class Post(db.Model):
         return f'<Post: {self.body}>'
 
     def get_date(self):
-        month_to_str = {1: 'jan',
-                        2: 'feb',
-                        3: 'mar',
-                        4: 'apr',
-                        5: 'may',
-                        6: 'jun',
-                        7: 'jul',
-                        8: 'aug',
-                        9: 'sep',
-                        10: 'oct',
-                        11: 'nov',
-                        12: 'dec'}
-
-        time_diff = datetime.now() - self.timestamp
-        if time_diff < timedelta(minutes=1):
-            return 'just now'
-        elif time_diff < timedelta(minutes=60):
-            return f'{time_diff.seconds // 60} minutes ago'
-        elif datetime.now().day - self.timestamp.day < 1:
-            return f'today {self.timestamp.hour:0>2d}:{self.timestamp.minute:0>2d}'
-        elif datetime.now().day - self.timestamp.day == 1:
-            return f'yesterday {self.timestamp.hour:0>2d}:{self.timestamp.minute:0>2d}'
-        elif datetime.now().year - self.timestamp.year < 1:
-            return f'{self.timestamp.day} {month_to_str[self.timestamp.month]} ' \
-                   f'{self.timestamp.hour:0>2d}:{self.timestamp.minute:0>2d}'
-        else:
-            return f'{self.timestamp.day} {month_to_str[self.timestamp.month]} {self.timestamp.year} ' \
-                   f'{self.timestamp.hour:0>2d}:{self.timestamp.minute:0>2d}'
+        return format_time(self.timestamp)
 
     def delete(self):
         self.is_deleted = True
@@ -155,7 +172,6 @@ class Profile(db.Model):
     date_of_birth = db.Column(db.Date, index=True)
     gender = db.Column(db.String(1))
     info = db.Column(db.Text)
-    last_seen = db.Column(db.DateTime, index=True, default=datetime.now())
     photo_id = db.Column(db.Integer, db.ForeignKey('media.id'))
     media = db.relationship('Media', back_populates='profile')
 
@@ -197,4 +213,4 @@ class Message(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     body = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.now())
+    created_at = db.Column(db.DateTime, default=func.current_timestamp())

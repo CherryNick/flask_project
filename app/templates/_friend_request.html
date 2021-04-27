@@ -20,7 +20,10 @@
     <tr class="friend_buttons">
         <td class="friend_buttons">
             <a href="{{ url_for('chat', username=friend.username) }}">Send message</a>
-            <a href="{{ url_for('unfriend', username=friend.username) }}">Unfriend</a>
+            <br>
+            <a href="{{ url_for('approve_request', username=friend.username) }}">Accept</a>
+            <br>
+            <a href="{{ url_for('approve_request', username=friend.username) }}">Decline</a>
         </td>
     </tr>
 </table>

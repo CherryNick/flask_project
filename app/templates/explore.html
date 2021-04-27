@@ -2,22 +2,23 @@
 
 {% block content %}
 <h1>Explore</h1>
-<h4>Write something:</h4>
-{% include "_post_form.html" %}
-<div>
-    {% if posts %}
-    {% for post in posts %}
-    {% include "_post.html" %}
-    {% endfor %}
-    {% if prev_url %}
-    <a href="{{ prev_url }}">Previous page</a>
-    {% endif %}
-    {% if next_url %}
-    <a href="{{ next_url }}">Next page</a>
-    {% endif %}
-    {% else %}
-    <p>There is no posts yet :(</p>
-    {% endif %}
+<div class="post_wall">
+    {% include "_post_form.html" %}
+    <div>
+        {% if posts %}
+        {% for post in posts %}
+        {% include "_post.html" %}
+        {% endfor %}
+        {% if prev_url %}
+        <a href="{{ prev_url }}">Previous page</a>
+        {% endif %}
+        {% if next_url %}
+        <a href="{{ next_url }}">Next page</a>
+        {% endif %}
+        {% else %}
+        <p>There is no posts yet :(</p>
+        {% endif %}
+    </div>
 </div>
 
 {% endblock %}
