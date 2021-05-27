@@ -206,9 +206,8 @@ def chat(username):
     user = User.query.filter_by(username=username).first_or_404()
     messages = current_user.get_chat_with_user(user)
 
-    # form
-
-    return render_template('chat.html', messages=messages, username=username)
+    return render_template('chat.html', messages=messages, username=username, target_user_id=user.id,
+                           target_user=user)
 
 
 @app.route('/delete_post/<post_id>')

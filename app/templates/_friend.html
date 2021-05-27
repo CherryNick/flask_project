@@ -20,7 +20,9 @@
     <tr class="friend_buttons">
         <td class="friend_buttons">
             <a href="{{ url_for('chat', username=friend.username) }}">Send message</a>
+            {% if friend.id != current_user.id %}
             <a href="{{ url_for('unfriend', username=friend.username) }}">Unfriend</a>
+            {% endif %}
         </td>
     </tr>
 </table>
