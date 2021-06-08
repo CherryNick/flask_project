@@ -1,6 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
 
+<div class="hidden">
+    <img src="{{ current_user.profile.media.path }}" alt="photo" class="small_avatar currentUserPhoto">
+    {% if target_user.profile.media %}
+    <img src="{{ message.author.profile.media.path }}" alt="photo" class="small_avatar targetUserPhoto">
+    {% endif %}
+</div>
+
 <div class="chat">
     <h3>Chat with {{ username }}</h3>
     <div class="chatBlock">
@@ -8,8 +15,6 @@
         {% for message in messages %}
         {% include "_message.html" %}
         {% endfor %}
-        {% else %}
-        <a href="">Start messenging</a>
         {% endif %}
     </div>
 
@@ -35,26 +40,33 @@
         return dateTime;
     };
 
-    const currentUserPhoto = document.querySelector('.currentUserPhoto').outerHTML;
-    const currentUserName = `<a href="{{ url_for('user', username=current_user.username) }}">{{ current_user.username }}</a>`;
+    try {
+        const currentUserPhoto = document.querySelector('.currentUserPhoto').outerHTML;
+        const currentUserName = `<a href="{{ url_for('user', username=current_user.username) }}">{{ current_user.username }}</a>`;
 
+        const userPhotoClass = document.querySelector('.targetUserPhoto');
 
-    const userPhoto = document.querySelector('.targetUserPhoto').outerHTML;
-    const userName = `<a href="{{ url_for('user', username=username) }}">{{ username }}</a>`;
+        const userPhoto = (userPhotoClass) ? userPhotoClass.outerHTML :
+            null;
 
-    const messageBlock = document.querySelector('.chatBlock')
+        const userName = `<a href="{{ url_for('user', username=username) }}">{{ username }}</a>`;
 
-    const targetUserId = '{{ target_user_id }}';
-    const sendMessageBtn = document.querySelector('.sendMessageBtn');
-    const textField = document.querySelector('.textField');
+        const messageBlock = document.querySelector('.chatBlock')
 
-    sendMessageBtn.addEventListener('click', (event) => {
+        const targetUserId = '{{ target_user_id }}';
+        const sendMessageBtn = document.querySelector('.sendMessageBtn');
+        const textField = document.querySelector('.textField');
 
-        socket.emit('send_from', textField.value, targetUserId);
-        messageBlock.insertAdjacentHTML('beforeend', `<div><table><td class="messageContentPart">${currentUserName}<br><p class="messageText">${textField.value}</p><br>${getTime()}</td><td>${currentUserPhoto}</td></table></div>`);
-        textField.value = '';
+        sendMessageBtn.addEventListener('click', (event) => {
 
-    })
+            socket.emit('send_from', textField.value, targetUserId);
+            messageBlock.insertAdjacentHTML('beforeend', `<div><table><td class="messageContentPart">${currentUserName}<br><p class="messageText">${textField.value}</p><br>${getTime()}</td><td>${currentUserPhoto}</td></table></div>`);
+            textField.value = '';
+
+        })
+    } catch (err) {
+        console.log(err);
+    }
 
     //accept messages
 

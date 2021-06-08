@@ -1,15 +1,19 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Need to do on web sockets</h1>
+<div class="chats">
+    <h1>Chats:</h1>
+    <div>
+        {% if users %}
+        {% for user in users %}
+        {% include "_user_chat.html" %}
+        {% endfor %}
+        {% else %}
+        <a href="">Start messenging</a>
+        {% endif %}
 
-<h3>Chats:</h3>
-{% if users %}
-{% for user in users %}
-{% include "_user_chat.html" %}
-{% endfor %}
-{% else %}
-<a href="">Start messenging</a>
-{% endif %}
+
+    </div>
+</div>
 
 {% endblock %}

@@ -1,7 +1,7 @@
 from flask import request
 from app.models import Media
 from os import path
-from app import app, db
+from app import db
 from shortuuid import uuid
 
 

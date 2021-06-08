@@ -44,7 +44,15 @@
     display: flex;
 }
 
+.chats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
+.user_chat {
+    min-width: 600px;
+}
 
 .post_wall {
     padding: 10px 50px;
@@ -107,6 +115,12 @@
     width: 80px;
     height: 80px;
     border-radius: 40px;
+}
+
+.small_avatar_td {
+    min-width: 80px;
+    min-height: 80px;
+    
 }
 
 .friends {
@@ -194,4 +208,8 @@ td.friend_buttons {
     max-width: 400px;
     min-width: 400px;
     min-height: 40px;
+}
+
+.hidden {
+    display: none;
 }

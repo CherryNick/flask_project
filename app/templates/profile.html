@@ -39,6 +39,8 @@
         {% endif %}
         <br>
         <a href="{{ url_for('friends', username=user.username) }}">{{user.username}}'s friends</a>
+
+        <a href="{{ url_for('chat', username=user.username) }}"><button>Send message</button></a>
     </div>
 
     <div class="post_wall">

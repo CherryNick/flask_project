@@ -9,6 +9,7 @@ import pathlib
 
 
 def format_time(time_field):
+    """return human readable date-time format"""
     month_to_str = {1: 'jan',
                     2: 'feb',
                     3: 'mar',
@@ -89,10 +90,9 @@ class User(UserMixin, db.Model):
                                           FriendRequest.status == 'approved')).all()
 
     def friends_posts(self):
-        """Костыли какие то"""
         friends_id = [friend.id for friend in self.friend_list]
         friends = Post.query.filter(Post.user_id.in_(friends_id),
-                                    Post.is_deleted == False)
+                                    Post.is_deleted is False)
         own = Post.query.filter_by(user_id=self.id, is_deleted=False)
         return friends.union(own).order_by(Post.timestamp.desc())
 
@@ -141,6 +141,9 @@ class User(UserMixin, db.Model):
 
     def get_last_seen(self):
         return format_time(self.last_seen)
+
+    def get_unread_messages(self):
+        pass
 
 
 @login.user_loader
