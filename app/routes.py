@@ -2,7 +2,7 @@ from flask import render_template, flash, redirect, url_for, request
 from app.forms import LoginForm, RegistrationForm, EditProfileForm, CreatePost
 from app import app, db
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User, Post, Profile, FriendRequest, Message
+from app.models import User, Post, Profile, FriendRequest
 from werkzeug.urls import url_parse
 from app.utils import upload_media
 from sqlalchemy import func
@@ -206,9 +206,8 @@ def chat(username):
     user = User.query.filter_by(username=username).first_or_404()
     messages = current_user.get_chat_with_user(user)
 
-    # form
-
-    return render_template('chat.html', messages=messages, username=username)
+    return render_template('chat.html', messages=messages, username=username, target_user_id=user.id,
+                           target_user=user)
 
 
 @app.route('/delete_post/<post_id>')

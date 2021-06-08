@@ -1,4 +1,5 @@
 .idea
 /app/static/media
+/app/logs
 __pycache__
 config.py

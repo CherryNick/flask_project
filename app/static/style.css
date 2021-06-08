@@ -44,7 +44,15 @@
     display: flex;
 }
 
+.chats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
+.user_chat {
+    min-width: 600px;
+}
 
 .post_wall {
     padding: 10px 50px;
@@ -109,6 +117,12 @@
     border-radius: 40px;
 }
 
+.small_avatar_td {
+    min-width: 80px;
+    min-height: 80px;
+    
+}
+
 .friends {
     display: flex;
     flex-direction: column;
@@ -160,4 +174,42 @@ td.friend_buttons {
     padding: 5px 40px;
     display: flex;
     justify-content: space-between;
+}
+
+.messageContentPart {
+    min-width: 400px;
+    max-width: 400px;
+    
+}
+
+.chatBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.messageText {
+    word-break: break-all;
+}
+
+.chat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sendMessageBtn {
+    width: 70px;
+    height: 30px;
+}
+
+.textField {
+    margin-top: 20px;
+    max-width: 400px;
+    min-width: 400px;
+    min-height: 40px;
+}
+
+.hidden {
+    display: none;
 }

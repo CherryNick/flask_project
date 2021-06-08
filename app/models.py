@@ -9,6 +9,7 @@ import pathlib
 
 
 def format_time(time_field):
+    """return human readable date-time format"""
     month_to_str = {1: 'jan',
                     2: 'feb',
                     3: 'mar',
@@ -27,9 +28,9 @@ def format_time(time_field):
         return 'just now'
     elif time_diff < timedelta(minutes=60):
         return f'{time_diff.seconds // 60} minutes ago'
-    elif datetime.now().day - time_field.day < 1:
+    elif datetime.now().date() - time_field.date() < timedelta(days=1):
         return f'today {time_field.hour:0>2d}:{time_field.minute:0>2d}'
-    elif datetime.now().day - time_field.day == 1:
+    elif datetime.now().date() - time_field.date() < timedelta(days=2):
         return f'yesterday {time_field.hour:0>2d}:{time_field.minute:0>2d}'
     elif datetime.now().year - time_field.year < 1:
         return f'{time_field.day} {month_to_str[time_field.month]} ' \
@@ -89,10 +90,9 @@ class User(UserMixin, db.Model):
                                           FriendRequest.status == 'approved')).all()
 
     def friends_posts(self):
-        """Костыли какие то"""
         friends_id = [friend.id for friend in self.friend_list]
         friends = Post.query.filter(Post.user_id.in_(friends_id),
-                                    Post.is_deleted == False)
+                                    Post.is_deleted is False)
         own = Post.query.filter_by(user_id=self.id, is_deleted=False)
         return friends.union(own).order_by(Post.timestamp.desc())
 
@@ -137,10 +137,13 @@ class User(UserMixin, db.Model):
     def get_chat_with_user(self, user):
         return db.session.query(Message).filter_by(receiver_id=self.id, sender_id=user.id).union(
             db.session.query(Message).filter_by(receiver_id=user.id, sender_id=self.id).order_by(
-                Message.created_at.desc()))
+                Message.created_at.desc())).all()
 
     def get_last_seen(self):
         return format_time(self.last_seen)
+
+    def get_unread_messages(self):
+        pass
 
 
 @login.user_loader
@@ -214,3 +217,6 @@ class Message(db.Model):
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     body = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=func.current_timestamp())
+
+    def get_time(self):
+        return format_time(self.created_at)

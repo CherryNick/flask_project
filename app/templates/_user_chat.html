@@ -1,17 +1,19 @@
-<table>
-    <tr valign="top">
-        <td>{% if user.profile.media %}
-            <img src="{{ user.profile.media.path }}" alt="photo" class="small_avatar">
-            {% endif %}
-        </td>
-        <td>
-            <a href="{{ url_for('user', username=user.username) }}">
-                {{ user.username }}
-            </a>
-            <br>
-            <p>SOME TEXT</p>
-            <br>
-            <a href="{{ url_for('chat', username=user.username) }}">Chat</a>
-        </td>
-    </tr>
-</table>
+<div class="user_chat">
+    <table>
+        <tr valign="top">
+            <td class="small_avatar_td">{% if user.profile.media %}
+                <img src="{{ user.profile.media.path }}" alt="photo" class="small_avatar">
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('user', username=user.username) }}">
+                    {{ user.username }}
+                </a>
+                <br>
+                <p></p>
+                <br>
+                <a href="{{ url_for('chat', username=user.username) }}">Chat</a>
+            </td>
+        </tr>
+    </table>
+</div>

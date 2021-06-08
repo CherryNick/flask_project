@@ -1,33 +1,35 @@
-<table>
-    <tr valign="top">
-        {% if message.author == current_user %}
-        <td>
-            <a href="{{ url_for('user', username=message.author.username) }}">
-                {{ message.author.username }}
-            </a>
-            <br>
-            <p>{{ message.body }}</p>
-            <br>
-            {{ message.created_at }}
-        </td>
-        <td>{% if message.author.profile.media %}
-            <img src="{{ message.author.profile.media.path }}" alt="photo" class="small_avatar">
+<div>
+    <table>
+        <tr valign="top">
+            {% if message.author == current_user %}
+            <td class="messageContentPart">
+                <a href="{{ url_for('user', username=message.author.username) }}">
+                    {{ message.author.username }}
+                </a>
+                <br>
+                <p>{{ message.body }}</p>
+                <br>
+                {{ message.get_time() }}
+            </td>
+            <td>{% if message.author.profile.media %}
+                <img src="{{ message.author.profile.media.path }}" alt="photo" class="small_avatar currentUserPhoto">
+                {% endif %}
+            </td>
+            {% else %}
+            <td>{% if message.author.profile.media %}
+                <img src="{{ message.author.profile.media.path }}" alt="photo" class="small_avatar targetUserPhoto">
+                {% endif %}
+            </td>
+            <td class="messageContentPart">
+                <a href="{{ url_for('user', username=message.author.username) }}">
+                    {{ message.author.username }}
+                </a>
+                <br>
+                <p>{{ message.body }}</p>
+                <br>
+                {{ message.get_time() }}
+            </td>
             {% endif %}
-        </td>
-        {% else %}
-        <td>{% if message.author.profile.media %}
-            <img src="{{ message.author.profile.media.path }}" alt="photo" class="small_avatar">
-            {% endif %}
-        </td>
-        <td>
-            <a href="{{ url_for('user', username=message.author.username) }}">
-                {{ message.author.username }}
-            </a>
-            <br>
-            <p>{{ message.body }}</p>
-            <br>
-            {{ message.created_at }}
-        </td>
-        {% endif %}
-    </tr>
-</table>
+        </tr>
+    </table>
+</div>
